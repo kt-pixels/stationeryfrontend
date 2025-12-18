@@ -14,6 +14,7 @@ import Analytics from "./pages/Analytics";
 import Alerts from "./pages/Alerts";
 import Reports from "./pages/Reports";
 import CapitalOverview from "./components/CapitalOverview";
+import Creditors from "./pages/Creditors";
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="alerts" element={<Alerts />} />
             <Route path="reports" element={<Reports />} />
             <Route path="capital" element={<CapitalOverview />} />
+            <Route path="creditors" element={<Creditors />} />
           </Route>
         </Routes>
       </BrowserRouter>

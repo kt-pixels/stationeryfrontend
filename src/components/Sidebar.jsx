@@ -28,6 +28,7 @@ const menuSections = [
     section: "Sales",
     items: [
       { path: "/sales", label: "Sales & Billing", icon: <FaCashRegister /> },
+      { path: "/creditors", label: "Creditors", icon: <FaCashRegister /> },
     ],
   },
   {
