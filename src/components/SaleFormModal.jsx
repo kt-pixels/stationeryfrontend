@@ -54,6 +54,10 @@ export default function SaleFormModal({ open, onClose, onSuccess }) {
   const submit = async () => {
     if (!items.length) return alert("Add items");
 
+    if (items.some((i) => !i.product)) {
+      return alert("Please select product for all items");
+    }
+
     await api.post("/sales", {
       ...form,
       items: items.map((i) => ({
@@ -73,11 +77,27 @@ export default function SaleFormModal({ open, onClose, onSuccess }) {
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const removeItem = (index) => {
+    const copy = [...items];
+    copy.splice(index, 1);
+    setItems(copy);
+
+    if (activeIndex === index) {
+      setActiveIndex(null);
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
         <div className="bg-white w-full max-w-4xl rounded-2xl p-6 space-y-6 max-h-[90vh]">
           <h2 className="text-2xl font-bold">New Sale</h2>
+
+          {form.paymentMode === "Credit" && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+              ⚠️ This sale will be added to Creditors (payment pending)
+            </div>
+          )}
 
           {/* ===== BILL INFO ===== */}
           <div className="grid grid-cols-3 gap-4">
@@ -97,9 +117,10 @@ export default function SaleFormModal({ open, onClose, onSuccess }) {
                 setForm({ ...form, paymentMode: e.target.value })
               }
             >
-              <option>Cash</option>
-              <option>UPI</option>
-              <option>Card</option>
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Card">Card</option>
+              <option value="Credit">Credit (Udhaar)</option>
             </select>
 
             <select
@@ -127,7 +148,20 @@ export default function SaleFormModal({ open, onClose, onSuccess }) {
 
             <div className="max-h-[40vh] overflow-y-auto space-y-3">
               {items.map((item, i) => (
-                <div key={i} className="border rounded-xl p-4 space-y-3">
+                // <div key={i} className="border rounded-xl p-4 space-y-3">
+                <div
+                  key={i}
+                  className="border rounded-xl p-4 space-y-3 relative"
+                >
+                  {/* ❌ REMOVE BUTTON */}
+                  <button
+                    onClick={() => removeItem(i)}
+                    className="absolute top-3 right-3 text-red-500 hover:text-red-700"
+                    title="Remove item"
+                  >
+                    ✕
+                  </button>
+
                   {/* PRODUCT */}
                   <button
                     onClick={(e) => {

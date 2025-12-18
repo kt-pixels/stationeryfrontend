@@ -17,7 +17,10 @@ export default function Dashboard() {
     totalProducts: 0,
     lowStockAlerts: 0,
     salesGrowth: 0,
+    outstandingCredit: 0, // ✅ NEW
+    creditSalesCount: 0, // ✅ NEW
   });
+
   const [salesData, setSalesData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,38 +31,55 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [prodRes, salesRes, expRes] = await Promise.all([
+      const [prodRes, salesRes, expRes, credRes] = await Promise.all([
         api.get("/products"),
         api.get("/sales"),
         api.get("/expenses"),
+        api.get("/creditors"),
       ]);
 
       const products = prodRes.data.data;
       const sales = salesRes.data.data;
       const today = new Date().toDateString();
+      const creditors = credRes.data.data;
 
       // 1. Calculate Today's KPIs
       const todaySalesEntries = sales.filter(
         (s) => new Date(s.saleDate).toDateString() === today
       );
-      const todaySales = todaySalesEntries.reduce(
+      const cashSalesToday = todaySalesEntries.filter(
+        (s) => s.paymentStatus === "PAID"
+      );
+
+      const todaySales = cashSalesToday.reduce(
         (sum, s) => sum + s.totalAmount,
         0
       );
-      const todayProfit = todaySalesEntries.reduce(
-        (sum, s) => sum + s.profit,
-        0
-      );
+
+      const todayProfit = cashSalesToday.reduce((sum, s) => sum + s.profit, 0);
+
       const lowStockCount = products.filter(
         (p) => p.stock <= p.minStock
       ).length;
+
+      const totalOutstandingCredit = creditors.reduce(
+        (sum, c) => sum + c.balance,
+        0
+      );
+
+      const creditSalesCount = creditors.reduce(
+        (sum, c) => sum + c.sales.length,
+        0
+      );
 
       setKpis({
         todaySales,
         todayProfit,
         totalProducts: products.length,
         lowStockAlerts: lowStockCount,
-        salesGrowth: 12.5, // Mocked growth percentage
+        salesGrowth: 12.5,
+        outstandingCredit: totalOutstandingCredit, // ✅
+        creditSalesCount, // ✅
       });
 
       // 2. Prepare Category Split (Doughnut)
@@ -73,12 +93,15 @@ export default function Dashboard() {
 
       // 3. Prepare Sales Trend (Last 6 entries/days)
       setSalesData(
-        sales.slice(-6).map((s) => ({
-          label: new Date(s.saleDate).toLocaleDateString(undefined, {
-            weekday: "short",
-          }),
-          total: s.totalAmount,
-        }))
+        sales
+          .filter((s) => s.paymentStatus === "PAID")
+          .slice(-6)
+          .map((s) => ({
+            label: new Date(s.saleDate).toLocaleDateString(undefined, {
+              weekday: "short",
+            }),
+            total: s.totalAmount,
+          }))
       );
 
       setLoading(false);
@@ -140,6 +163,19 @@ export default function Dashboard() {
           title="Low Stock Items"
           value={kpis.lowStockAlerts}
           trend={kpis.lowStockAlerts > 0 ? "down" : "up"}
+          color="text-orange-600"
+        />
+        <KPI
+          title="Outstanding Credit"
+          value={`₹${kpis.outstandingCredit.toLocaleString()}`}
+          trend="down"
+          color="text-red-600"
+        />
+
+        <KPI
+          title="Credit Sales"
+          value={kpis.creditSalesCount}
+          trend="neutral"
           color="text-orange-600"
         />
       </div>

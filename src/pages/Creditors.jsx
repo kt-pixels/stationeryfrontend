@@ -3,7 +3,8 @@ import api from "../services/api";
 
 export default function Creditors() {
   const [creditors, setCreditors] = useState([]);
-  const [amount, setAmount] = useState("");
+  // const [amount, setAmount] = useState("");
+  const [payAmounts, setPayAmounts] = useState({});
 
   const load = async () => {
     const res = await api.get("/creditors");
@@ -15,10 +16,12 @@ export default function Creditors() {
   }, []);
 
   const pay = async (id) => {
-    if (!amount) return alert("Enter amount");
+    const amt = Number(payAmounts[id]);
+    if (!amt) return alert("Enter amount");
 
-    await api.post(`/creditors/${id}/pay`, { amount: Number(amount) });
-    setAmount("");
+    await api.post(`/creditors/${id}/pay`, { amount: amt });
+
+    setPayAmounts({ ...payAmounts, [id]: "" });
     load();
   };
 
@@ -42,8 +45,10 @@ export default function Creditors() {
               <input
                 type="number"
                 placeholder="Pay"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                value={payAmounts[c._id] || ""}
+                onChange={(e) =>
+                  setPayAmounts({ ...payAmounts, [c._id]: e.target.value })
+                }
                 className="w-24 border px-2 py-1 rounded"
               />
 

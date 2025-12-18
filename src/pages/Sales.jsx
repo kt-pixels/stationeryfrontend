@@ -158,6 +158,12 @@ export default function Sales() {
           filteredSales.map((s) => (
             <div key={s._id} className="p-5 space-y-3">
               {/* HEADER */}
+              {s.paymentStatus === "UNPAID" && (
+                <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+                  CREDIT
+                </span>
+              )}
+
               <div className="flex justify-between items-center">
                 <div>
                   <h4 className="font-semibold">Invoice #{s.invoiceNumber}</h4>
@@ -213,7 +219,7 @@ export default function Sales() {
       <SaleFormModal
         open={openModal}
         onClose={() => setOpenModal(false)}
-        onSuccess={fetchSales}
+        onSuccess={() => fetchSales(fromDate, toDate)}
       />
 
       {returnSale && (

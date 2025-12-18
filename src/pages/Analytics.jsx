@@ -16,16 +16,19 @@ export default function Analytics() {
   const [expenses, setExpenses] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [creditors, setCreditors] = useState([]);
 
   useEffect(() => {
     Promise.all([
       api.get("/sales"),
       api.get("/expenses"),
       api.get("/products"),
-    ]).then(([salesRes, expRes, prodRes]) => {
+      api.get("/creditors"), // ✅
+    ]).then(([salesRes, expRes, prodRes, credRes]) => {
       setSales(salesRes.data.data);
       setExpenses(expRes.data.data);
       setProducts(prodRes.data.data);
+      setCreditors(credRes.data.data); // ✅
       setLoading(false);
     });
   }, []);
@@ -44,17 +47,25 @@ export default function Analytics() {
     );
   }
 
-  /* ================= CALCULATIONS ================= */
-  const totalRevenue = sales.reduce((sum, s) => sum + s.totalAmount, 0);
+  const paidSales = sales.filter((s) => s.paymentStatus === "PAID");
+
+  const totalRevenue = paidSales.reduce((sum, s) => sum + s.totalAmount, 0);
+
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const netProfit = totalRevenue - totalExpenses;
+
   const lowStockCount = products.filter((p) => p.stock <= p.minStock).length;
   const profitMargin =
     totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
 
+  const efficiency =
+    totalRevenue > 0
+      ? 100 - ((totalExpenses / totalRevenue) * 100).toFixed(0)
+      : 0;
+
   /* ================= MONTHLY DATA PREP ================= */
   const monthlyMap = {};
-  sales.forEach((s) => {
+  paidSales.forEach((s) => {
     const key = new Date(s.saleDate).toLocaleString("default", {
       month: "short",
     });
@@ -119,6 +130,16 @@ export default function Analytics() {
           color="text-orange-600"
           sub="Items to restock"
         />
+        <KPI
+          title="Outstanding Credit"
+          value={`₹${creditors
+            .reduce((s, c) => s + c.balance, 0)
+            .toLocaleString()}`}
+          icon={<FaWallet />}
+          bg="bg-rose-50"
+          color="text-rose-600"
+          sub="Pending customer payments"
+        />
       </div>
 
       {/* ================= CHARTS SECTION ================= */}
@@ -174,9 +195,7 @@ export default function Analytics() {
               <p className="text-xs text-gray-400 font-bold uppercase">
                 Efficiency
               </p>
-              <p className="text-2xl font-black text-gray-800">
-                {100 - ((totalExpenses / totalRevenue) * 100).toFixed(0)}%
-              </p>
+              <p className="text-2xl font-black text-gray-800">{efficiency}%</p>
             </div>
           </div>
         </Card>
